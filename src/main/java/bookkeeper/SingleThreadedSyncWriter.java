@@ -26,7 +26,7 @@ import org.apache.zookeeper.data.Stat;
 
 public class SingleThreadedSyncWriter {
 
-    final static String ZOOKEEPER_SERVER = "128.105.144.95:2181,128.105.144.105:2181,128.105.144.249:2181";
+    final static String ZOOKEEPER_SERVER = "128.105.145.0:2181,128.105.144.249:2181,128.105.144.105:2181";
     static String streamName = "default";
     Utility utility = new Utility();
     final static byte[] PASSWD = "pass".getBytes();
@@ -40,7 +40,8 @@ public class SingleThreadedSyncWriter {
         bookkeeper = new BookKeeper(ZOOKEEPER_SERVER);
     }
 
-    private void start(int numberOfRequests, int bytes) throws BKException, InterruptedException {
+    private void start(int numberOfRequests, int bytes, int numEntriesPerBatch)
+            throws BKException, InterruptedException, IOException {
         LedgerHandle lh = bookkeeper.createLedger(BookKeeper.DigestType.MAC, PASSWD);
         long ledgerId = lh.getId();
 
@@ -64,25 +65,74 @@ public class SingleThreadedSyncWriter {
         }
         long finalStopTime = System.currentTimeMillis();
         lh.close();
-        bookkeeper.deleteLedger(ledgerId);
-        try {
-            utility.logInCSVFile(numberOfRequests,
-                    totalBytes,
-                    finalStopTime - initialStartTime,
-                    entryIds,
-                    runningTimes,
-                    dataGenerationTimes,
-                    streamName + ".csv");
-        } catch (Exception e) {
-            e.printStackTrace();
+
+        lh = bookkeeper.openLedger(ledgerId, BookKeeper.DigestType.MAC, PASSWD);
+        List<Long> batchSizes = new ArrayList<Long>();
+        List<Long> batchLatencies = new ArrayList<Long>();
+
+        // long startFetchTime = System.currentTimeMillis();
+        // Enumeration<LedgerEntry> entries = lh.readEntries(0, numberOfRequests - 1);
+        // long endFetchTime = System.currentTimeMillis();
+        // System.out.println(String.format("read entries time: %s", endFetchTime -
+        // startFetchTime));
+
+        // while (entries.hasMoreElements()) {
+        // long startTime = System.currentTimeMillis();
+        // LedgerEntry entry = entries.nextElement();
+        // entry.getEntry();
+        // long stopTime = System.currentTimeMillis();
+
+        // long entryId = entry.getEntryId();
+        // entryIdsRead.add(entryId);
+        // runningTimesRead.add(stopTime - startTime);
+        // }
+        // long finalEndFetchTime = System.currentTimeMillis();
+
+        long startEntryId = 0L;
+        long nextEntryId = startEntryId;
+        long startFetchTime = System.currentTimeMillis();
+        while (nextEntryId < numberOfRequests) {
+
+            long endEntryId = Math.min(numberOfRequests - 1, nextEntryId + numEntriesPerBatch - 1);
+            long startTime = System.currentTimeMillis();
+            // System.out.printf("nextEntryId: %s, endEntryId: %s", nextEntryId,
+            // endEntryId);
+            Enumeration<LedgerEntry> entries = lh.readEntries(nextEntryId, endEntryId);
+            long stopTime = System.currentTimeMillis();
+
+            batchSizes.add(endEntryId - nextEntryId + 1);
+            batchLatencies.add(stopTime - startTime);
+
+            nextEntryId = endEntryId + 1;
         }
+        long finalEndFetchTime = System.currentTimeMillis();
+
+        lh.close();
+        bookkeeper.deleteLedger(ledgerId);
+
+        utility.logInCSVFile(numberOfRequests,
+                totalBytes,
+                finalStopTime - initialStartTime,
+                entryIds,
+                runningTimes,
+                dataGenerationTimes,
+                "producer." + streamName + ".csv");
+
+        utility.logInCSVFileRead(numberOfRequests,
+                finalEndFetchTime - startFetchTime,
+                batchSizes,
+                batchLatencies,
+                "consumer." + streamName + ".csv");
+
+        bookkeeper.close();
     }
 
     public static void main(String[] args) throws Exception {
         streamName = args[0];
         int numberOfRequests = Integer.parseInt(args[1]);
         int bytes = Integer.parseInt(args[2]);
-        new SingleThreadedSyncWriter().start(numberOfRequests, bytes);
+        int numEntriesPerBatch = Integer.parseInt(args[3]);
+        new SingleThreadedSyncWriter().start(numberOfRequests, bytes, numEntriesPerBatch);
     }
 
 }

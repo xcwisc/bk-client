@@ -74,6 +74,34 @@ public class Utility {
         csvWriter.close();
     }
 
+    public void logInCSVFileRead(int numberOfRequests,
+            long totalTime,
+            List<Long> batchSizes,
+            List<Long> batchLatencies,
+            String filename) throws IOException {
+
+        System.out.println("Now Logging into a CSV file");
+        FileWriter csvWriter = new FileWriter(filename);
+
+        String startRow = "id,latency,size,totalTime\n";
+        csvWriter.append(startRow);
+        for (int i = 0; i < batchSizes.size(); i++) {
+            long size = batchSizes.get(i);
+            long latency = batchLatencies.get(i);
+            String row = String.valueOf(i)
+                    + ","
+                    + String.valueOf(latency)
+                    + ","
+                    + String.valueOf(size)
+                    + ","
+                    + String.valueOf(totalTime);
+            csvWriter.append(row);
+            csvWriter.append("\n");
+        }
+        csvWriter.flush();
+        csvWriter.close();
+    }
+
     // public void logInCSVFile(int numberOfRequests,
     // long totalBytes,
     // long totalTime,
