@@ -1,12 +1,11 @@
 package util;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.util.ArrayList;
+import java.io.ByteArrayOutputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.List;
 
 public class Utility {
@@ -28,16 +27,34 @@ public class Utility {
         }
         map.put(length, sb.toString().getBytes());
         return map.get(length);
-
     }
 
-    // public void writeLineToAFile(String filename, String line) throws IOException
-    // {
-    // FileWriter fileWriter = new FileWriter(filename);
-    // fileWriter.append(line);
-    // fileWriter.flush();
-    // fileWriter.close();
-    // }
+    public byte[] longToBytes(long x) {
+        ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
+        buffer.putLong(x);
+        return buffer.array();
+    }
+
+    public long bytesToLong(byte[] bytes) {
+        ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
+        buffer.put(bytes);
+        buffer.flip();// need flip
+        return buffer.getLong();
+    }
+
+    public byte[] generateRandomString(int length, long timestamp) {
+        byte[] filler = generateRandomString(length - 8);
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        try {
+            outputStream.write(longToBytes(timestamp));
+            outputStream.write(filler);
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        return outputStream.toByteArray();
+    }
 
     public void logInCSVFile(int numberOfRequests,
             long totalBytes,
@@ -101,83 +118,5 @@ public class Utility {
         csvWriter.flush();
         csvWriter.close();
     }
-
-    // public void logInCSVFile(int numberOfRequests,
-    // long totalBytes,
-    // long totalTime,
-    // List<Long> runningTimes,
-    // List<Long> dataGenerationTimes,
-    // String filename) throws IOException {
-
-    // System.out.println("Now Logging into a CSV file");
-    // FileWriter csvWriter = new FileWriter(filename);
-
-    // String startRow = "id,latency,dataGenTime,totalBytes,totalTime\n";
-    // csvWriter.append(startRow);
-    // for (int i = 0; i < numberOfRequests; i++) {
-    // long latency = runningTimes.get(i);
-    // long datagenTime = dataGenerationTimes.get(i);
-    // String row = String.valueOf(i)
-    // + ","
-    // + String.valueOf(latency)
-    // + ","
-    // + String.valueOf(datagenTime)
-    // + ","
-    // + String.valueOf(totalBytes)
-    // + ","
-    // + String.valueOf(totalTime);
-    // csvWriter.append(row);
-    // csvWriter.append("\n");
-    // }
-    // csvWriter.flush();
-    // csvWriter.close();
-    // }
-
-    // public void writeLogLocationsInCSV(String filename,
-    // List<Long> latency,
-    // List<Long> entryIds,
-    // List<Long> txSeq) throws Exception {
-    // System.out.println("Now Logging into a CSV file");
-    // FileWriter csvWriter = new FileWriter(filename);
-    // String startRow = "id,latency,entryId,transactionSequenceId\n";
-    // csvWriter.append(startRow);
-    // for (int i = 0; i < latency.size(); i++) {
-    // String row = String.valueOf(i)
-    // + ","
-    // + String.valueOf(latency.get(i))
-    // + ","
-    // + String.valueOf(entryIds.get(i))
-    // + ","
-    // + String.valueOf(txSeq.get(i));
-    // csvWriter.append(row);
-    // csvWriter.append("\n");
-    // }
-    // csvWriter.flush();
-    // csvWriter.close();
-    // }
-
-    // public List<CorfuRecordId> readLogPositions(String filename) throws Exception
-    // {
-    // // String startRow = "id,latency,entryId,transactionSequenceId\n";
-    // BufferedReader reader;
-    // boolean firstLine = true;
-    // List<CorfuRecordId> corfuRecordIds = new ArrayList<>();
-
-    // reader = new BufferedReader(new FileReader(filename));
-    // String line = reader.readLine();
-    // while (line != null) {
-    // if (!firstLine) {
-    // String arr[] = line.split(",");
-    // CorfuRecordId corfuRecordId = new CorfuRecordId(Long.parseLong(arr[3]),
-    // Long.parseLong(arr[2]));
-    // corfuRecordIds.add(corfuRecordId);
-    // }
-    // line = reader.readLine();
-    // firstLine = false;
-    // }
-    // reader.close();
-
-    // return corfuRecordIds;
-    // }
 
 }

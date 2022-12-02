@@ -1,28 +1,17 @@
 package bookkeeper;
 
-import com.google.common.primitives.Ints;
 import util.Utility;
 
-import java.io.Closeable;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.Random;
 
-import org.apache.bookkeeper.conf.ClientConfiguration;
 import org.apache.bookkeeper.client.BookKeeper;
 import org.apache.bookkeeper.client.LedgerEntry;
 import org.apache.bookkeeper.client.LedgerHandle;
 import org.apache.bookkeeper.client.BKException;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.framework.recipes.leader.LeaderSelector;
-import org.apache.curator.framework.recipes.leader.LeaderSelectorListenerAdapter;
-import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.data.Stat;
 
 public class SingleThreadedSyncWriter {
 
@@ -69,24 +58,6 @@ public class SingleThreadedSyncWriter {
         lh = bookkeeper.openLedger(ledgerId, BookKeeper.DigestType.MAC, PASSWD);
         List<Long> batchSizes = new ArrayList<Long>();
         List<Long> batchLatencies = new ArrayList<Long>();
-
-        // long startFetchTime = System.currentTimeMillis();
-        // Enumeration<LedgerEntry> entries = lh.readEntries(0, numberOfRequests - 1);
-        // long endFetchTime = System.currentTimeMillis();
-        // System.out.println(String.format("read entries time: %s", endFetchTime -
-        // startFetchTime));
-
-        // while (entries.hasMoreElements()) {
-        // long startTime = System.currentTimeMillis();
-        // LedgerEntry entry = entries.nextElement();
-        // entry.getEntry();
-        // long stopTime = System.currentTimeMillis();
-
-        // long entryId = entry.getEntryId();
-        // entryIdsRead.add(entryId);
-        // runningTimesRead.add(stopTime - startTime);
-        // }
-        // long finalEndFetchTime = System.currentTimeMillis();
 
         long startEntryId = 0L;
         long nextEntryId = startEntryId;
