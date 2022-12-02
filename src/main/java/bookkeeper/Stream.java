@@ -10,7 +10,6 @@ import java.util.List;
 import org.apache.bookkeeper.client.BookKeeper;
 import org.apache.bookkeeper.client.LedgerEntry;
 import org.apache.bookkeeper.client.LedgerHandle;
-import org.apache.bookkeeper.client.AsyncCallback.AddCallback;
 import org.apache.bookkeeper.client.AsyncCallback;
 import org.apache.bookkeeper.client.BKException;
 import org.apache.zookeeper.KeeperException;
@@ -119,15 +118,26 @@ public class Stream {
         batchSizes.add(endEntryId - nextEntryId + 1);
         byte[] entry = entries.nextElement().getEntry();
         long insertTime = utility.bytesToLong(Arrays.copyOfRange(entry, 0, 8));
-        System.out.println(endEntryId - nextEntryId + 1);
-        System.out.println(startTime);
-        System.out.println(insertTime);
+        // System.out.println(endEntryId - nextEntryId + 1);
+        // System.out.println(startTime);
+        // System.out.println(insertTime);
         batchLatencies.add(startTime - insertTime);
 
         nextEntryId = endEntryId + 1;
 
       }
       long finalEndFetchTime = System.currentTimeMillis();
+
+      try {
+        utility.logInCSVFileRead(numberOfRequests,
+            finalEndFetchTime - startFetchTime,
+            batchSizes,
+            batchLatencies,
+            "consumer." + streamName + ".csv");
+      } catch (IOException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      }
 
     }
   }
